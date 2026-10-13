@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Englisch Vokabeltrainer</title>
+    <title>Englisch Vokabeln</title>
     <style>
         /* --- CSS VARIABLES (Light Mode Default) --- */
         :root {
@@ -96,7 +96,7 @@
     <header>
         <button class="menu-btn" onclick="toggleMenu()">☰</button>
         <h3 id="current-topic-title">Laden...</h3>
-        <button class="theme-btn" id="theme-toggle">🌙</button>
+        <button class="theme-btn" id="theme-toggle">Dark</button>
     </header>
 
     <div id="sidebar">
@@ -111,7 +111,7 @@
                 <option value="en-de">Englisch ➔ Deutsch</option>
                 <option value="de-en">Deutsch ➔ Englisch</option>
             </select>
-            <button onclick="renderQuiz()" style="padding: 8px 12px; border-radius:5px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-color); cursor:pointer;">🔀 Mischen</button>
+            <button onclick="renderQuiz()" style="padding: 8px 12px; border-radius:5px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-color); cursor:pointer;">Mischen</button>
         </div>
 
         <div id="quiz-container"></div>
@@ -130,7 +130,7 @@
         function setTheme(theme) {
             document.documentElement.setAttribute('data-theme', theme);
             localStorage.setItem('theme', theme);
-            themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+            themeToggle.textContent = theme === 'dark' ? 'Light' : 'Dark';
         }
 
         const savedTheme = localStorage.getItem('theme');
