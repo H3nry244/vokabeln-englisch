@@ -3,332 +3,249 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vokabel-Trainer</title>
-    <!-- Lade Tailwind CSS für ein schlichtes, modernes Design -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Englisch Vokabeltrainer</title>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f8fafc; /* Sehr helles Grau-Blau */
-            color: #334155;
+        /* --- CSS VARIABLES (Light Mode Default) --- */
+        :root {
+            --bg-color: #f4f7f6;
+            --text-color: #333;
+            --card-bg: #ffffff;
+            --border-color: #e0e0e0;
+            --primary: #4A90E2;
+            --primary-hover: #357ABD;
+            --correct: #2ecc71;
+            --incorrect: #e74c3c;
+            --menu-bg: #ffffff;
+            --shadow: rgba(0,0,0,0.05);
         }
-        
-        /* Schönerer Toggle-Switch */
-        .toggle-checkbox:checked {
-            right: 0;
-            border-color: #3b82f6;
+
+        /* --- DARK MODE VARIABLES --- */
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --card-bg: #1e1e1e;
+            --border-color: #333;
+            --primary: #5fa8ff;
+            --primary-hover: #4A90E2;
+            --menu-bg: #1e1e1e;
+            --shadow: rgba(0,0,0,0.5);
         }
-        .toggle-checkbox:checked + .toggle-label {
-            background-color: #3b82f6;
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); transition: background-color 0.3s, color 0.3s; }
+
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--card-bg); padding: 15px 20px;
+            box-shadow: 0 2px 5px var(--shadow); position: sticky; top: 0; z-index: 100;
         }
-        
-        /* Animation für Sidebar */
+
+        .menu-btn, .theme-btn {
+            background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-color);
+        }
+
+        /* --- SIDEBAR MENU --- */
         #sidebar {
-            transition: transform 0.3s ease-in-out;
+            position: fixed; top: 0; left: -250px; width: 250px; height: 100%;
+            background: var(--menu-bg); box-shadow: 2px 0 5px var(--shadow);
+            transition: 0.3s; z-index: 200; padding: 20px; overflow-y: auto;
         }
-        .sidebar-open {
-            transform: translateX(0) !important;
+        #sidebar.open { left: 0; }
+        #sidebar h2 { margin-bottom: 20px; font-size: 1.2rem; }
+        .topic-btn {
+            display: block; width: 100%; padding: 10px; margin-bottom: 10px;
+            background: var(--bg-color); border: 1px solid var(--border-color);
+            border-radius: 5px; cursor: pointer; color: var(--text-color); text-align: left;
         }
+        .topic-btn:hover { background: var(--border-color); }
+        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 24px; background: none; border: none; color: var(--text-color); cursor: pointer; }
+
+        /* --- MAIN CONTENT --- */
+        main { max-width: 600px; margin: 30px auto; padding: 0 20px; }
+        .controls { display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; }
+        select {
+            padding: 8px 12px; border-radius: 5px; border: 1px solid var(--border-color);
+            background: var(--card-bg); color: var(--text-color); font-size: 1rem;
+        }
+
+        .vocab-card {
+            background: var(--card-bg); padding: 20px; margin-bottom: 15px;
+            border-radius: 10px; box-shadow: 0 4px 6px var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+        .vocab-question { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; }
+        .vocab-input {
+            width: 100%; padding: 10px; border: 1px solid var(--border-color);
+            border-radius: 5px; background: var(--bg-color); color: var(--text-color); font-size: 1rem;
+        }
+
+        .btn-primary {
+            display: block; width: 100%; padding: 15px; background: var(--primary);
+            color: #fff; border: none; border-radius: 8px; font-size: 1.1rem;
+            cursor: pointer; margin-top: 20px; transition: 0.2s;
+        }
+        .btn-primary:hover { background: var(--primary-hover); }
+
+        .feedback { margin-top: 10px; font-weight: bold; display: none; }
+        .correct-text { color: var(--correct); }
+        .incorrect-text { color: var(--incorrect); }
     </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body>
 
-    <!-- Header -->
-    <header class="bg-white shadow-sm sticky top-0 z-20">
-        <div class="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-4">
-                <!-- Hamburger Menü Button -->
-                <button id="menuBtn" class="p-2 text-slate-500 hover:text-slate-800 focus:outline-none">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                    </svg>
-                </button>
-                <h1 id="headerTitle" class="text-xl font-semibold">Vokabel-Trainer</h1>
-            </div>
-
-            <!-- Toggle Schalter EN->DE / DE->EN -->
-            <div class="flex items-center gap-2 text-sm font-medium">
-                <span id="lang1" class="text-blue-600">EN</span>
-                <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                    <input type="checkbox" name="toggle" id="directionToggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 border-slate-300 appearance-none cursor-pointer z-10 transition-all duration-300 right-5"/>
-                    <label for="directionToggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-slate-300 cursor-pointer transition-colors duration-300"></label>
-                </div>
-                <span id="lang2" class="text-slate-400">DE</span>
-            </div>
-        </div>
+    <header>
+        <button class="menu-btn" onclick="toggleMenu()">☰</button>
+        <h3 id="current-topic-title">Laden...</h3>
+        <button class="theme-btn" id="theme-toggle">🌙</button>
     </header>
 
-    <!-- Sidebar / Menü -->
-    <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden transition-opacity"></div>
-    <aside id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-white shadow-xl z-40 transform -translate-x-full">
-        <div class="p-4 border-b flex justify-between items-center">
-            <h2 class="text-lg font-bold">Themen</h2>
-            <button id="closeMenuBtn" class="text-slate-500 hover:text-slate-800">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
-        </div>
-        <ul id="topicList" class="p-2">
-            <!-- Themen werden hier per JS eingefügt -->
-        </ul>
-    </aside>
-
-    <!-- Hauptbereich für Vokabeln -->
-    <main class="flex-grow w-full max-w-3xl mx-auto p-4 pb-24">
-        <div id="vocabContainer" class="space-y-4">
-            <!-- Vokabel-Inputs werden hier per JS eingefügt -->
-        </div>
-    </main>
-
-    <!-- Footer mit Prüfen-Button (Fixiert am unteren Bildschirmrand) -->
-    <div class="fixed bottom-0 w-full bg-white border-t border-slate-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-10">
-        <div class="max-w-3xl mx-auto flex gap-4">
-            <button id="checkBtn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg shadow-sm transition-colors">
-                Prüfen
-            </button>
-            <button id="restartBtn" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-3 px-4 rounded-lg shadow-sm transition-colors">
-                Neu mischen
-            </button>
-        </div>
+    <div id="sidebar">
+        <button class="close-btn" onclick="toggleMenu()">×</button>
+        <h2>Themen</h2>
+        <div id="topic-list"></div>
     </div>
 
+    <main>
+        <div class="controls">
+            <select id="direction" onchange="renderQuiz()">
+                <option value="en-de">Englisch ➔ Deutsch</option>
+                <option value="de-en">Deutsch ➔ Englisch</option>
+            </select>
+            <button onclick="renderQuiz()" style="padding: 8px 12px; border-radius:5px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-color); cursor:pointer;">🔀 Mischen</button>
+        </div>
+
+        <div id="quiz-container"></div>
+
+        <button class="btn-primary" onclick="checkAnswers()">Prüfen</button>
+    </main>
+
     <script>
-        /**
-         * Hier sind deine Vokabeldaten. 
-         * Wenn du von der KI neue Daten bekommst, füge sie einfach als neuen Block hier ein.
-         * Ich habe die Wörter aus deinen hochgeladenen Bildern extrahiert.
-         */
-        const vocabData = {
-            "Phrasal Verbs (Sport)": [
-                { "en": "take up", "de": "anfangen" },
-                { "en": "warm up", "de": "aufwärmen" },
-                { "en": "knock out", "de": "ausscheiden lassen" },
-                { "en": "join in", "de": "mitmachen" },
-                { "en": "give in", "de": "nachgeben" },
-                { "en": "go for it", "de": "es versuchen" },
-                { "en": "work out", "de": "trainieren" },
-                { "en": "give up", "de": "aufgeben" },
-                { "en": "take on", "de": "antreten gegen" },
-                { "en": "drop out", "de": "aussteigen" },
-                { "en": "catch up", "de": "aufholen" }
-            ],
-            "People in Sport": [
-                { "en": "referee", "de": "Schiedsrichter" },
-                { "en": "coach", "de": "Trainer" },
-                { "en": "opponent", "de": "Gegner" },
-                { "en": "runner-up", "de": "Zweitplatzierter" },
-                { "en": "champion", "de": "Meister" },
-                { "en": "competitor", "de": "Teilnehmer" },
-                { "en": "umpire", "de": "Schiedsrichter" }
-            ],
-            "Olympics": [
-                { "en": "compete", "de": "antreten" },
-                { "en": "amateur", "de": "Amateur" },
-                { "en": "reward", "de": "belohnen" },
-                { "en": "spectator", "de": "Zuschauer" },
-                { "en": "participant", "de": "Teilnehmer" },
-                { "en": "prevent", "de": "verhindern" },
-                { "en": "deny", "de": "verweigern" }
-            ]
-        };
+        let currentVocab = [];
+        let allTopics = [];
 
-        let currentTopic = Object.keys(vocabData)[0]; // Wählt standardmäßig das erste Thema
-        let isEnToDe = true; // true = Englisch -> Deutsch, false = Deutsch -> Englisch
-        let currentSessionWords = [];
+        // --- THEME LOGIC (Dark/Light Mode) ---
+        const themeToggle = document.getElementById('theme-toggle');
+        const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
 
-        // DOM Elemente
-        const menuBtn = document.getElementById('menuBtn');
-        const closeMenuBtn = document.getElementById('closeMenuBtn');
-        const sidebar = document.getElementById('sidebar');
-        const sidebarOverlay = document.getElementById('sidebarOverlay');
-        const topicList = document.getElementById('topicList');
-        const directionToggle = document.getElementById('directionToggle');
-        const lang1 = document.getElementById('lang1');
-        const lang2 = document.getElementById('lang2');
-        const vocabContainer = document.getElementById('vocabContainer');
-        const checkBtn = document.getElementById('checkBtn');
-        const restartBtn = document.getElementById('restartBtn');
-        const headerTitle = document.getElementById('headerTitle');
-
-        // Sidebar steuern
-        function toggleSidebar() {
-            sidebar.classList.toggle('sidebar-open');
-            sidebarOverlay.classList.toggle('hidden');
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
         }
 
-        menuBtn.addEventListener('click', toggleSidebar);
-        closeMenuBtn.addEventListener('click', toggleSidebar);
-        sidebarOverlay.addEventListener('click', toggleSidebar);
-
-        // Themen-Liste in der Sidebar aufbauen
-        function renderSidebar() {
-            topicList.innerHTML = '';
-            for (const topic in vocabData) {
-                const li = document.createElement('li');
-                const btn = document.createElement('button');
-                btn.className = `w-full text-left px-4 py-3 rounded-lg mt-1 transition-colors ${topic === currentTopic ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-slate-100 text-slate-700'}`;
-                btn.innerText = topic;
-                btn.onclick = () => {
-                    currentTopic = topic;
-                    renderSidebar(); // Um den aktiven Status zu aktualisieren
-                    toggleSidebar();
-                    startNewSession();
-                };
-                li.appendChild(btn);
-                topicList.appendChild(li);
-            }
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            setTheme(savedTheme);
+        } else if (prefersDarkScheme.matches) {
+            setTheme('dark');
+        } else {
+            setTheme('light');
         }
 
-        // Array zufällig mischen (Fisher-Yates Algorithmus)
-        function shuffleArray(array) {
-            let curId = array.length;
-            while (0 !== curId) {
-                let randId = Math.floor(Math.random() * curId);
-                curId -= 1;
-                let tmp = array[curId];
-                array[curId] = array[randId];
-                array[randId] = tmp;
-            }
-            return array;
-        }
-
-        // Neue Runde starten
-        function startNewSession() {
-            headerTitle.innerText = currentTopic;
-            // Kopiere das Array, um das Original nicht zu verändern, und mische es
-            currentSessionWords = shuffleArray([...vocabData[currentTopic]]);
-            renderVocabList();
-        }
-
-        // Vokabel-Felder rendern
-        function renderVocabList() {
-            vocabContainer.innerHTML = ''; // Vorherige leeren
-            
-            currentSessionWords.forEach((wordObj, index) => {
-                const questionWord = isEnToDe ? wordObj.en : wordObj.de;
-                const answerWord = isEnToDe ? wordObj.de : wordObj.en;
-
-                const wrapper = document.createElement('div');
-                wrapper.className = 'bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col md:flex-row md:items-center gap-2 md:gap-4';
-
-                // Label (Das gesuchte Wort)
-                const label = document.createElement('label');
-                label.className = 'font-medium text-slate-700 md:w-1/3 break-words';
-                label.innerText = questionWord;
-                label.setAttribute('for', `vocab-${index}`);
-
-                // Input Bereich
-                const inputWrapper = document.createElement('div');
-                inputWrapper.className = 'flex-grow relative';
-
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.id = `vocab-${index}`;
-                input.dataset.answer = answerWord; // Verstecke die Antwort im data-Attribut
-                input.className = 'w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all';
-                input.placeholder = 'Übersetzung eingeben...';
-                input.autocomplete = 'off';
-
-                // Container für die Lösungsanzeige (anfangs unsichtbar)
-                const solutionSpan = document.createElement('div');
-                solutionSpan.className = 'hidden mt-2 text-sm font-medium';
-                solutionSpan.id = `solution-${index}`;
-
-                inputWrapper.appendChild(input);
-                inputWrapper.appendChild(solutionSpan);
-
-                wrapper.appendChild(label);
-                wrapper.appendChild(inputWrapper);
-                
-                vocabContainer.appendChild(wrapper);
-            });
-            
-            // Fokus auf das erste Eingabefeld setzen
-            if(vocabContainer.querySelector('input')) {
-                vocabContainer.querySelector('input').focus();
-            }
-        }
-
-        // Richtung wechseln (EN->DE <-> DE->EN)
-        directionToggle.addEventListener('change', (e) => {
-            isEnToDe = !e.target.checked;
-            
-            if (isEnToDe) {
-                lang1.classList.replace('text-slate-400', 'text-blue-600');
-                lang2.classList.replace('text-blue-600', 'text-slate-400');
-            } else {
-                lang1.classList.replace('text-blue-600', 'text-slate-400');
-                lang2.classList.replace('text-slate-400', 'text-blue-600');
-            }
-            
-            startNewSession(); // Bei Richtungswechsel neu mischen und starten
+        themeToggle.addEventListener('click', () => {
+            let current = document.documentElement.getAttribute('data-theme');
+            setTheme(current === 'dark' ? 'light' : 'dark');
         });
 
-        // Antworten überprüfen
-        function checkAnswers() {
-            const inputs = vocabContainer.querySelectorAll('input');
-            let allCorrect = true;
 
+        // --- MENU & DATA FETCHING ---
+        function toggleMenu() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+
+        async function initApp() {
+            try {
+                // Lade die Liste aller Kapitel
+                const response = await fetch('data/topics.json');
+                allTopics = await response.json();
+                
+                const topicList = document.getElementById('topic-list');
+                topicList.innerHTML = '';
+                
+                allTopics.forEach(topic => {
+                    const btn = document.createElement('button');
+                    btn.className = 'topic-btn';
+                    btn.textContent = topic.title;
+                    btn.onclick = () => {
+                        loadTopic(topic.id, topic.title);
+                        toggleMenu();
+                    };
+                    topicList.appendChild(btn);
+                });
+
+                // Lade das erste Thema standardmäßig
+                if(allTopics.length > 0) {
+                    loadTopic(allTopics[0].id, allTopics[0].title);
+                }
+            } catch (error) {
+                document.getElementById('current-topic-title').textContent = "Fehler beim Laden";
+                console.error("Daten konnten nicht geladen werden. Läuft die Seite auf GitHub Pages?", error);
+            }
+        }
+
+        async function loadTopic(id, title) {
+            try {
+                document.getElementById('current-topic-title').textContent = title;
+                // Lade die Vokabeln für das spezifische Kapitel
+                const response = await fetch(`data/${id}.json`);
+                currentVocab = await response.json();
+                renderQuiz();
+            } catch (error) {
+                console.error("Fehler beim Laden der Vokabeln.", error);
+            }
+        }
+
+        // --- QUIZ LOGIC ---
+        function renderQuiz() {
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = '';
+            
+            // Array mischen
+            let shuffled = [...currentVocab].sort(() => Math.random() - 0.5);
+            const direction = document.getElementById('direction').value;
+
+            shuffled.forEach((word, index) => {
+                const isEnToDe = direction === 'en-de';
+                const question = isEnToDe ? word.en : word.de;
+                const answer = isEnToDe ? word.de : word.en;
+
+                const card = document.createElement('div');
+                card.className = 'vocab-card';
+                card.innerHTML = `
+                    <div class="vocab-question">${question}</div>
+                    <input type="text" class="vocab-input" id="input-${index}" autocomplete="off" placeholder="Übersetzung eingeben...">
+                    <input type="hidden" id="answer-${index}" value="${answer}">
+                    <div class="feedback" id="feedback-${index}"></div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function checkAnswers() {
+            const inputs = document.querySelectorAll('.vocab-input');
             inputs.forEach((input, index) => {
                 const userAnswer = input.value.trim().toLowerCase();
-                // Erlaube mehrere richtige Antworten, wenn sie durch Komma getrennt sind (macht das Lernen weniger frustrierend)
-                const correctAnswers = input.dataset.answer.toLowerCase().split(',').map(s => s.trim());
-                
-                const solutionSpan = document.getElementById(`solution-${index}`);
+                // Schneidet beim Überprüfen Synonyme nach dem Komma oder Schrägstrich ab
+                const correctAnswerFull = document.getElementById(`answer-${index}`).value;
+                const correctAnswerMain = correctAnswerFull.split(/[,/]/)[0].trim().toLowerCase();
+                const feedback = document.getElementById(`feedback-${index}`);
 
-                if (userAnswer === '') {
-                    // Nicht ausgefüllt
-                    input.className = 'w-full bg-red-50 border border-red-300 rounded-lg px-4 py-2 focus:outline-none focus:border-red-500 transition-all text-red-900';
-                    solutionSpan.innerHTML = `Lösung: <span class="text-red-600">${input.dataset.answer}</span>`;
-                    solutionSpan.classList.remove('hidden', 'text-green-600');
-                    solutionSpan.classList.add('block', 'text-red-600');
-                    allCorrect = false;
-                }
-                else if (correctAnswers.includes(userAnswer)) {
-                    // Richtig
-                    input.className = 'w-full bg-green-50 border border-green-300 rounded-lg px-4 py-2 focus:outline-none focus:border-green-500 transition-all text-green-900';
-                    solutionSpan.classList.add('hidden'); // Verstecke Lösung falls vorher falsch
+                feedback.style.display = 'block';
+
+                if (userAnswer === correctAnswerMain || userAnswer === correctAnswerFull.toLowerCase()) {
+                    feedback.textContent = 'Richtig!';
+                    feedback.className = 'feedback correct-text';
+                    input.style.borderColor = 'var(--correct)';
                 } else {
-                    // Falsch
-                    input.className = 'w-full bg-red-50 border border-red-300 rounded-lg px-4 py-2 focus:outline-none focus:border-red-500 transition-all text-red-900';
-                    solutionSpan.innerHTML = `Lösung: <span class="text-red-600 font-bold">${input.dataset.answer}</span>`;
-                    solutionSpan.classList.remove('hidden', 'text-green-600');
-                    solutionSpan.classList.add('block', 'text-red-600');
-                    allCorrect = false;
+                    feedback.textContent = `Falsch! Lösung: ${correctAnswerFull}`;
+                    feedback.className = 'feedback incorrect-text';
+                    input.style.borderColor = 'var(--incorrect)';
                 }
             });
-
-            if (allCorrect && inputs.length > 0) {
-                // Konnte 'alert' nicht verwenden wie vorgegeben, daher visuelles Feedback
-                const btn = document.getElementById('checkBtn');
-                const originalText = btn.innerText;
-                const originalColor = btn.className;
-                
-                btn.innerText = "Alles Richtig! 🎉";
-                btn.className = "flex-1 bg-green-500 text-white font-semibold py-3 px-4 rounded-lg shadow-sm transition-colors";
-                
-                setTimeout(() => {
-                    btn.innerText = originalText;
-                    btn.className = originalColor;
-                }, 2000);
-            }
         }
 
-        // Event Listener für Buttons
-        checkBtn.addEventListener('click', checkAnswers);
-        restartBtn.addEventListener('click', startNewSession);
-
-        // Erlaube das Prüfen auch durch Drücken von 'Enter' im letzten Feld
-        vocabContainer.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                checkAnswers();
-            }
-        });
-
-        // App starten
-        renderSidebar();
-        startNewSession();
+        // Start App
+        initApp();
     </script>
 </body>
 </html>
