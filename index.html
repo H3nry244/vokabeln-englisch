@@ -111,6 +111,9 @@
                 <option value="en-de">Englisch ➔ Deutsch</option>
                 <option value="de-en">Deutsch ➔ Englisch</option>
             </select>
+
+            <input type="number" id="limit" class="limit-input" min="1" placeholder="Anzahl (leer = Alle)" onchange="renderQuiz()">
+            
             <button onclick="renderQuiz()" style="padding: 8px 12px; border-radius:5px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-color); cursor:pointer;">Mischen</button>
         </div>
 
@@ -186,9 +189,12 @@
         async function loadTopic(id, title) {
             try {
                 document.getElementById('current-topic-title').textContent = title;
-                // Lade die Vokabeln für das spezifische Kapitel
                 const response = await fetch(`data/${id}.json`);
                 currentVocab = await response.json();
+                
+                // Setze das Limit-Feld beim Themenwechsel zurück (leer = alle anzeigen)
+                document.getElementById('limit').value = '';
+                
                 renderQuiz();
             } catch (error) {
                 console.error("Fehler beim Laden der Vokabeln.", error);
@@ -200,8 +206,18 @@
             const container = document.getElementById('quiz-container');
             container.innerHTML = '';
             
-            // Array mischen
+            // 1. Array KOMPLETT mischen
             let shuffled = [...currentVocab].sort(() => Math.random() - 0.5);
+            
+            // 2. Limit prüfen und anwenden
+            const limitInput = document.getElementById('limit').value;
+            if (limitInput.trim() !== '') {
+                const limitNumber = parseInt(limitInput, 10);
+                if (!isNaN(limitNumber) && limitNumber > 0) {
+                    shuffled = shuffled.slice(0, limitNumber);
+                }
+            }
+            
             const direction = document.getElementById('direction').value;
 
             shuffled.forEach((word, index) => {
