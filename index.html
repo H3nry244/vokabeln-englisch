@@ -1,125 +1,267 @@
 <!DOCTYPE html>
-<html lang="de" data-theme="light">
+<html lang="de">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#f5f5f7">
-<meta name="description" content="Englisch-Vokabeln lernen mit adaptiver Wiederholung.">
-<title>Vokabeln · Englisch</title>
-<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="assets/favicon.svg">
-<link rel="stylesheet" href="css/styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Englisch Vokabeln</title>
+    <style>
+        /* --- CSS VARIABLES (Light Mode Default) --- */
+        :root {
+            --bg-color: #f4f7f6;
+            --text-color: #333;
+            --card-bg: #ffffff;
+            --border-color: #e0e0e0;
+            --primary: #4A90E2;
+            --primary-hover: #357ABD;
+            --correct: #2ecc71;
+            --incorrect: #e74c3c;
+            --menu-bg: #ffffff;
+            --shadow: rgba(0,0,0,0.05);
+        }
+
+        /* --- DARK MODE VARIABLES --- */
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --card-bg: #1e1e1e;
+            --border-color: #333;
+            --primary: #5fa8ff;
+            --primary-hover: #4A90E2;
+            --menu-bg: #1e1e1e;
+            --shadow: rgba(0,0,0,0.5);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); transition: background-color 0.3s, color 0.3s; }
+
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--card-bg); padding: 15px 20px;
+            box-shadow: 0 2px 5px var(--shadow); position: sticky; top: 0; z-index: 100;
+        }
+
+        .menu-btn, .theme-btn {
+            background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-color);
+        }
+
+        /* --- SIDEBAR MENU --- */
+        #sidebar {
+            position: fixed; top: 0; left: -250px; width: 250px; height: 100%;
+            background: var(--menu-bg); box-shadow: 2px 0 5px var(--shadow);
+            transition: 0.3s; z-index: 200; padding: 20px; overflow-y: auto;
+        }
+        #sidebar.open { left: 0; }
+        #sidebar h2 { margin-bottom: 20px; font-size: 1.2rem; }
+        .topic-btn {
+            display: block; width: 100%; padding: 10px; margin-bottom: 10px;
+            background: var(--bg-color); border: 1px solid var(--border-color);
+            border-radius: 5px; cursor: pointer; color: var(--text-color); text-align: left;
+        }
+        .topic-btn:hover { background: var(--border-color); }
+        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 24px; background: none; border: none; color: var(--text-color); cursor: pointer; }
+
+        /* --- MAIN CONTENT --- */
+        main { max-width: 600px; margin: 30px auto; padding: 0 20px; }
+        .controls { display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; }
+        select {
+            padding: 8px 12px; border-radius: 5px; border: 1px solid var(--border-color);
+            background: var(--card-bg); color: var(--text-color); font-size: 1rem;
+        }
+
+        .vocab-card {
+            background: var(--card-bg); padding: 20px; margin-bottom: 15px;
+            border-radius: 10px; box-shadow: 0 4px 6px var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+        .vocab-question { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; }
+        .vocab-input {
+            width: 100%; padding: 10px; border: 1px solid var(--border-color);
+            border-radius: 5px; background: var(--bg-color); color: var(--text-color); font-size: 1rem;
+        }
+
+        .btn-primary {
+            display: block; width: 100%; padding: 15px; background: var(--primary);
+            color: #fff; border: none; border-radius: 8px; font-size: 1.1rem;
+            cursor: pointer; margin-top: 20px; transition: 0.2s;
+        }
+        .btn-primary:hover { background: var(--primary-hover); }
+
+        .feedback { margin-top: 10px; font-weight: bold; display: none; }
+        .correct-text { color: var(--correct); }
+        .incorrect-text { color: var(--incorrect); }
+    </style>
 </head>
 <body>
 
-<div class="app">
+    <header>
+        <button class="menu-btn" onclick="toggleMenu()">☰</button>
+        <h3 id="current-topic-title">Laden...</h3>
+        <button class="theme-btn" id="theme-toggle">Dark</button>
+    </header>
 
-    <!-- ================= ÜBERSICHT ================= -->
-    <section class="screen" data-screen="start" aria-hidden="false">
-        <header class="topbar">
-            <div class="topbar__lead">
-                <h1 class="topbar__title">Vokabeln</h1>
-                <p class="topbar__subtitle">Englisch</p>
-            </div>
-            <button class="icon-btn" id="theme-toggle" type="button" aria-label="Erscheinungsbild wechseln"></button>
-        </header>
+    <div id="sidebar">
+        <button class="close-btn" onclick="toggleMenu()">×</button>
+        <h2>Themen</h2>
+        <div id="topic-list"></div>
+    </div>
 
-        <div class="content">
-            <section class="panel">
-                <h2 class="panel__label">Thema</h2>
-                <div class="topics" id="topic-list" role="radiogroup" aria-label="Thema"></div>
-                <p class="loading" id="loading-note">Themen werden geladen …</p>
-            </section>
+    <main>
+        <div class="controls">
+            <select id="direction" onchange="renderQuiz()">
+                <option value="en-de">Englisch ➔ Deutsch</option>
+                <option value="de-en">Deutsch ➔ Englisch</option>
+            </select>
 
-            <section class="panel">
-                <h2 class="panel__label">Richtung</h2>
-                <div class="segmented" id="direction" role="radiogroup" aria-label="Abfragerichtung">
-                    <button type="button" class="segmented__item" data-value="de-en" role="radio" aria-checked="true">Deutsch → Englisch</button>
-                    <button type="button" class="segmented__item" data-value="en-de" role="radio" aria-checked="false">Englisch → Deutsch</button>
-                </div>
-
-                <h2 class="panel__label panel__label--spaced">Wiederholungen bis es sitzt</h2>
-                <div class="segmented segmented--numbers" id="mastery" role="radiogroup" aria-label="Wiederholungen">
-                    <button type="button" class="segmented__item" data-value="3" role="radio" aria-checked="false">3×</button>
-                    <button type="button" class="segmented__item" data-value="5" role="radio" aria-checked="true">5×</button>
-                    <button type="button" class="segmented__item" data-value="7" role="radio" aria-checked="false">7×</button>
-                    <button type="button" class="segmented__item" data-value="10" role="radio" aria-checked="false">10×</button>
-                </div>
-                <p class="hint">Jedes Vokabel kommt so oft richtig beantwortet zurück, bis es als gelernt gilt.</p>
-            </section>
-
-            <button class="btn btn--primary" id="start-btn" type="button" disabled>Lernen starten</button>
-            <button class="btn btn--plain" id="reset-btn" type="button">Fortschritt zurücksetzen</button>
+            <input type="number" id="limit" class="limit-input" min="1" placeholder="Anzahl (leer = Alle)" onchange="renderQuiz()">
+            
+            <button onclick="renderQuiz()" style="padding: 8px 12px; border-radius:5px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-color); cursor:pointer;">Mischen</button>
         </div>
-    </section>
 
-    <!-- ================= LERNEN ================= -->
-    <section class="screen" data-screen="study" aria-hidden="true">
-        <header class="topbar topbar--study">
-            <button class="icon-btn" id="study-back" type="button" aria-label="Zurück zur Übersicht">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
-            </button>
-            <span class="topbar__center" id="study-topic">Thema</span>
-            <span class="counter" id="study-counter">0/0</span>
-        </header>
-        <div class="progress"><div class="progress__bar" id="study-progress"></div></div>
+        <div id="quiz-container"></div>
 
-        <div class="content content--study">
-            <div class="card" id="card" aria-live="polite">
-                <p class="card__hint" id="card-hint">Übersetze ins Englische</p>
-                <p class="card__word" id="card-word"></p>
+        <button class="btn-primary" onclick="checkAnswers()">Prüfen</button>
+    </main>
 
-                <div class="field">
-                    <input id="answer-input" type="text" placeholder="Antwort eingeben"
-                           autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-                           enterkeyhint="done" aria-label="Deine Antwort">
-                </div>
+    <script>
+        let currentVocab = [];
+        let allTopics = [];
 
-                <div class="feedback" id="feedback" hidden>
-                    <span class="feedback__mark" id="feedback-mark" aria-hidden="true"></span>
-                    <span class="feedback__text" id="feedback-text"></span>
-                </div>
-            </div>
+        // --- THEME LOGIC (Dark/Light Mode) ---
+        const themeToggle = document.getElementById('theme-toggle');
+        const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
 
-            <div class="dots" id="dots" aria-label="Fortschritt dieses Vokabels"></div>
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            themeToggle.textContent = theme === 'dark' ? 'Light' : 'Dark';
+        }
 
-            <div class="actions">
-                <button class="btn btn--primary" id="check-btn" type="button" disabled>Prüfen</button>
-                <button class="btn btn--plain" id="skip-btn" type="button">Weiß ich nicht</button>
-            </div>
-        </div>
-    </section>
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            setTheme(savedTheme);
+        } else if (prefersDarkScheme.matches) {
+            setTheme('dark');
+        } else {
+            setTheme('light');
+        }
 
-    <!-- ================= ERGEBNIS ================= -->
-    <section class="screen" data-screen="summary" aria-hidden="true">
-        <div class="content content--summary">
-            <p class="summary__eyebrow" id="summary-eyebrow">Runde abgeschlossen</p>
-            <h2 class="summary__title" id="summary-title">Gut gemacht</h2>
-            <p class="summary__subtitle" id="summary-subtitle"></p>
+        themeToggle.addEventListener('click', () => {
+            let current = document.documentElement.getAttribute('data-theme');
+            setTheme(current === 'dark' ? 'light' : 'dark');
+        });
 
-            <div class="stats" id="summary-stats"></div>
 
-            <section class="panel panel--flush" id="summary-open-panel">
-                <h2 class="panel__label" id="summary-open-label">Noch nicht sicher</h2>
-                <ul class="wordlist" id="summary-open"></ul>
-            </section>
+        // --- MENU & DATA FETCHING ---
+        function toggleMenu() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
 
-            <button class="btn btn--primary" id="summary-continue" type="button">Weiter lernen</button>
-            <button class="btn btn--plain" id="summary-home" type="button">Zur Übersicht</button>
-        </div>
-    </section>
+        async function initApp() {
+            try {
+                // Lade die Liste aller Kapitel
+                const response = await fetch('data/topics.json');
+                allTopics = await response.json();
+                
+                const topicList = document.getElementById('topic-list');
+                topicList.innerHTML = '';
+                
+                allTopics.forEach(topic => {
+                    const btn = document.createElement('button');
+                    btn.className = 'topic-btn';
+                    btn.textContent = topic.title;
+                    btn.onclick = () => {
+                        loadTopic(topic.id, topic.title);
+                        toggleMenu();
+                    };
+                    topicList.appendChild(btn);
+                });
 
-</div>
+                // Lade das erste Thema standardmäßig
+                if(allTopics.length > 0) {
+                    loadTopic(allTopics[0].id, allTopics[0].title);
+                }
+            } catch (error) {
+                document.getElementById('current-topic-title').textContent = "Fehler beim Laden";
+                console.error("Daten konnten nicht geladen werden. Läuft die Seite auf GitHub Pages?", error);
+            }
+        }
 
-<noscript>
-    <p style="max-width:520px;margin:80px auto;font:16px/1.5 -apple-system,sans-serif;text-align:center">
-        Diese Seite braucht JavaScript, um Vokabeln abzufragen.
-    </p>
-</noscript>
+        async function loadTopic(id, title) {
+            try {
+                document.getElementById('current-topic-title').textContent = title;
+                const response = await fetch(`data/${id}.json`);
+                currentVocab = await response.json();
+                
+                // Setze das Limit-Feld beim Themenwechsel zurück (leer = alle anzeigen)
+                document.getElementById('limit').value = '';
+                
+                renderQuiz();
+            } catch (error) {
+                console.error("Fehler beim Laden der Vokabeln.", error);
+            }
+        }
 
-<script src="js/store.js"></script>
-<script src="js/scheduler.js"></script>
-<script src="js/app.js"></script>
+        // --- QUIZ LOGIC ---
+        function renderQuiz() {
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = '';
+            
+            // 1. Array KOMPLETT mischen
+            let shuffled = [...currentVocab].sort(() => Math.random() - 0.5);
+            
+            // 2. Limit prüfen und anwenden
+            const limitInput = document.getElementById('limit').value;
+            if (limitInput.trim() !== '') {
+                const limitNumber = parseInt(limitInput, 10);
+                if (!isNaN(limitNumber) && limitNumber > 0) {
+                    shuffled = shuffled.slice(0, limitNumber);
+                }
+            }
+            
+            const direction = document.getElementById('direction').value;
+
+            shuffled.forEach((word, index) => {
+                const isEnToDe = direction === 'en-de';
+                const question = isEnToDe ? word.en : word.de;
+                const answer = isEnToDe ? word.de : word.en;
+
+                const card = document.createElement('div');
+                card.className = 'vocab-card';
+                card.innerHTML = `
+                    <div class="vocab-question">${question}</div>
+                    <input type="text" class="vocab-input" id="input-${index}" autocomplete="off" placeholder="Übersetzung eingeben...">
+                    <input type="hidden" id="answer-${index}" value="${answer}">
+                    <div class="feedback" id="feedback-${index}"></div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function checkAnswers() {
+            const inputs = document.querySelectorAll('.vocab-input');
+            inputs.forEach((input, index) => {
+                const userAnswer = input.value.trim().toLowerCase();
+                // Schneidet beim Überprüfen Synonyme nach dem Komma oder Schrägstrich ab
+                const correctAnswerFull = document.getElementById(`answer-${index}`).value;
+                const correctAnswerMain = correctAnswerFull.split(/[,/]/)[0].trim().toLowerCase();
+                const feedback = document.getElementById(`feedback-${index}`);
+
+                feedback.style.display = 'block';
+
+                if (userAnswer === correctAnswerMain || userAnswer === correctAnswerFull.toLowerCase()) {
+                    feedback.textContent = 'Richtig!';
+                    feedback.className = 'feedback correct-text';
+                    input.style.borderColor = 'var(--correct)';
+                } else {
+                    feedback.textContent = `Falsch! Lösung: ${correctAnswerFull}`;
+                    feedback.className = 'feedback incorrect-text';
+                    input.style.borderColor = 'var(--incorrect)';
+                }
+            });
+        }
+
+        // Start App
+        initApp();
+    </script>
 </body>
 </html>
